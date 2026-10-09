@@ -1,0 +1,31 @@
+{
+  "name": "taskflow",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "dev:server": "npm run dev --prefix server",
+    "dev:all": "concurrently -n web,api -c indigo,stone \"npm run dev\" \"npm run dev:server\"",
+    "build": "vite build",
+    "lint": "oxlint",
+    "preview": "vite preview",
+    "test:api": "npm run test:api --prefix server"
+  },
+  "dependencies": {
+    "lucide-react": "^1.54.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "react-router-dom": "^7.18.4"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.7",
+    "@vitejs/plugin-react": "^6.1.1",
+    "oxlint": "^1.81.0",
+    "tailwindcss": "^4.3.3",
+    "vite": "^8.3.0"
+  }
+}
