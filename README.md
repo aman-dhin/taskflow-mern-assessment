@@ -1,15 +1,16 @@
 # TaskFlow — Project & Task Management
 
-Full-stack MERN-style task dashboard: React + Vite frontend and Express + MongoDB API.
+TaskFlow is a full-stack MERN-style task management application with a React + Vite frontend and an Express + MongoDB backend. It supports task creation, viewing, updating, deletion, and importing legacy tasks stored in the browser.
 
 ## Prerequisites
 
 - Node.js 20+
-- MongoDB 6+ (local install) **or** a [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) cluster
+- npm
+- MongoDB 6+ (local installation) or a [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) cluster
 
-### Local MongoDB (macOS examples)
+### Local MongoDB on macOS
 
-**Homebrew**
+**Using Homebrew**
 
 ```bash
 brew tap mongodb/brew
@@ -17,139 +18,255 @@ brew install mongodb-community
 brew services start mongodb-community
 ```
 
-**Docker**
+**Using Docker**
 
 ```bash
 docker run -d --name taskflow-mongo -p 27017:27017 mongo:7
 ```
 
-Default connection string: `mongodb://127.0.0.1:27017/taskflow`
+Default MongoDB connection string:
+
+```text
+mongodb://127.0.0.1:27017/taskflow
+```
+
+If you already have a MongoDB instance or Docker container running, use that instance instead of starting another one.
 
 ## Setup
 
+Run these commands from the project root:
+
 ```bash
-# From project root
 npm install
 npm install --prefix server
+```
 
-# Backend environment
+Create the backend environment file:
+
+```bash
 cp server/.env.example server/.env
+```
 
-# Frontend environment (optional — defaults to http://localhost:5000/api)
+The frontend environment file is optional. Create it only if you need to override the default API URL:
+
+```bash
 cp .env.example .env.local
 ```
 
-Edit `server/.env` with your `MONGODB_URI` and `CORS_ORIGIN` if needed.
+Edit `server/.env` and configure `MONGODB_URI` and `CORS_ORIGIN` if needed. If you created `.env.local`, set `VITE_API_URL` to the API URL you want the frontend to use.
 
-## Run
+**Never commit real environment files or database credentials.** The example environment files contain configuration templates, not secrets.
 
-**API only**
+## Run the application
+
+### Start the backend API
 
 ```bash
 npm run dev:server
 ```
 
-**Frontend only**
+### Start the frontend
+
+In a separate terminal:
 
 ```bash
 npm run dev
 ```
 
-**Both (recommended for development)**
+### Start both
+
+If the project’s `dev:all` script is configured for your environment, you can start both services with:
 
 ```bash
 npm run dev:all
 ```
 
+With the default configuration:
+
 - Frontend: http://localhost:5173
-- API: http://localhost:5001 (default in `.env.example`; macOS often reserves port 5000 for AirPlay)
+- Backend API: http://localhost:5001
+- Health endpoint: http://localhost:5001/api/health
+
+The backend port defaults to `5001` in `server/.env.example` and the source configuration. Port `5000` is deliberately not used as the default API port because it may already be occupied on macOS.
+
+## Custom local ports
+
+If a default port is occupied, choose available ports and keep the frontend and backend configuration consistent.
+
+For example, to run the API on port `5002` and Vite on port `5174`, configure the following values.
+
+In `server/.env`:
+
+```dotenv
+PORT=5002
+CORS_ORIGIN=http://localhost:5174
+```
+
+In the project-root `.env.local`:
+
+```dotenv
+VITE_API_URL=http://localhost:5002/api
+```
+
+Start the backend using your normal backend development command. Start Vite on the chosen port:
+
+```bash
+npm run dev -- --port 5174
+```
+
+Then open http://localhost:5174.
+
+Make sure `CORS_ORIGIN` matches the frontend origin exactly, and `VITE_API_URL` points to the backend API. Restart the development servers after changing environment variables.
 
 ## Environment variables
 
-| Location | Variable | Description |
-|----------|----------|-------------|
-| `server/.env` | `PORT` | API port (default `5001` in example) |
+| File | Variable | Purpose |
+|---|---|---|
+| `server/.env` | `PORT` | Backend API port; example default is `5001` |
 | `server/.env` | `MONGODB_URI` | MongoDB connection string |
-| `server/.env` | `CORS_ORIGIN` | Vite dev URL (default `http://localhost:5173`) |
-| `.env.local` | `VITE_API_URL` | API base URL (default `http://localhost:5001/api`) |
+| `server/.env` | `CORS_ORIGIN` | Allowed frontend origin; example default is `http://localhost:5173` |
+| `.env.local` | `VITE_API_URL` | Optional frontend API URL override; default is `http://localhost:5001/api` |
 
-Never commit real `.env` files or database credentials.
+The Vite frontend normally uses the default API URL defined in the source configuration. You do not need `.env.local` unless you want to override that value.
 
 ## API endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/api/health` | Service + MongoDB status |
-| GET | `/api/tasks` | List tasks (newest updated first) |
-| GET | `/api/tasks/:id` | Get one task |
-| POST | `/api/tasks` | Create task |
-| PATCH | `/api/tasks/:id` | Partial update |
-| DELETE | `/api/tasks/:id` | Delete task |
+The API base URL is `http://localhost:5001` by default.
 
-### Task JSON shape (API ↔ frontend)
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/health` | Check service and MongoDB health |
+| GET | `/api/tasks` | List tasks |
+| GET | `/api/tasks/:id` | Retrieve one task |
+| POST | `/api/tasks` | Create a task |
+| PATCH | `/api/tasks/:id` | Partially update a task |
+| DELETE | `/api/tasks/:id` | Delete a task |
+
+If you configure a custom backend port, use that port instead of `5001`.
+
+### Task JSON shape
+
+A task returned by the API may contain fields such as:
 
 ```json
 {
   "id": "665f1c2e3b4a5d6e7f890123",
-  "title": "string",
-  "description": "string",
-  "status": "todo | in_progress | review | done",
-  "priority": "low | medium | high | urgent",
-  "dueDate": "ISO-8601 string or null",
-  "assigneeId": "user-1 | user-2 | user-3 | user-4",
-  "createdAt": "ISO-8601",
-  "updatedAt": "ISO-8601"
+  "title": "Prepare project report",
+  "description": "Complete the project documentation",
+  "status": "todo",
+  "priority": "medium",
+  "dueDate": null,
+  "assigneeId": "user-1",
+  "createdAt": "2026-10-09T10:00:00.000Z",
+  "updatedAt": "2026-10-09T10:00:00.000Z"
 }
 ```
 
+Supported task status values:
+
+- `todo`
+- `in_progress`
+- `review`
+- `done`
+
+Supported priority values:
+
+- `low`
+- `medium`
+- `high`
+- `urgent`
+
+The exact fields accepted and returned are determined by the current API implementation.
+
 ## Testing
 
-**Frontend build**
+### API integration tests
 
-```bash
-npm run build
-npm run lint
-```
-
-**API integration tests** (uses in-memory MongoDB — no local MongoDB required)
+Run:
 
 ```bash
 npm run test:api
 ```
 
-**Manual smoke test** (with API + MongoDB running)
+The API integration tests use an in-memory MongoDB setup, so a local MongoDB instance is not required for that test suite.
+
+### Frontend production build
 
 ```bash
-curl -s http://localhost:5001/api/health | jq
-curl -s http://localhost:5001/api/tasks | jq
+npm run build
+```
+
+### Lint
+
+```bash
+npm run lint
+```
+
+Review the command output for errors and warnings.
+
+### Manual API smoke test
+
+Start the backend and ensure MongoDB is available. Then run these commands from your terminal:
+
+```bash
+API_PORT=5001
+curl -s "http://localhost:${API_PORT}/api/health"
+curl -s "http://localhost:${API_PORT}/api/tasks"
+```
+
+Change `API_PORT` if your backend is running on another port. If `jq` is installed and you want formatted JSON output, pipe either command to `jq`:
+
+```bash
+curl -s "http://localhost:${API_PORT}/api/health" | jq
+curl -s "http://localhost:${API_PORT}/api/tasks" | jq
 ```
 
 ## Local task migration
 
-If you used the frontend before the API existed, tasks may still be in `localStorage` under `taskflow_tasks`. When the API returns an empty list, the UI offers a one-time **Import local tasks** banner. Import posts each task to the API and clears legacy local task storage. Profile settings remain local.
+If you used the frontend before the API was available, existing tasks may still be stored in browser `localStorage` under the `taskflow_tasks` key.
+
+When the API returns an empty task list, the UI can offer a one-time **Import local tasks** banner. Importing posts the local tasks to the API and clears the legacy task storage. Profile settings remain local.
 
 ## Project structure
 
-```
+```text
 taskflow/
-├── src/                 # React frontend
-│   ├── api/             # fetch client + task endpoints
-│   ├── context/         # TaskProvider (API-backed)
-│   └── ...
+├── src/
+│   ├── api/              # API client and task endpoints
+│   ├── context/          # Task state and provider
+│   └── ...               # React components and application code
 ├── server/
 │   └── src/
-│       ├── config/      # env + MongoDB
-│       ├── controllers/
-│       ├── middleware/
-│       ├── models/
-│       ├── routes/
-│       └── utils/
-└── package.json         # frontend scripts + dev:all
+│       ├── config/       # Environment and MongoDB configuration
+│       ├── controllers/  # Request handlers
+│       ├── middleware/   # Express middleware
+│       ├── models/       # Mongoose models
+│       ├── routes/       # API routes
+│       └── utils/        # Shared utilities
+├── .env.example          # Frontend environment template
+├── .gitignore
+└── package.json          # Frontend scripts, including dev:all
 ```
 
-## Next steps (optional)
+## CodeZero confirmation
 
-- JWT authentication and user-scoped tasks
-- Real activity feed API
-- Workspace-scoped tasks (`workspaceId` on documents)
-- Deploy API and set production `VITE_API_URL`
+CodeZero was used during repository review and development support to inspect the project structure, review backend API and environment configuration, investigate local port conflicts, and check development and build command output.
+
+## AI Development Experience
+
+AI-assisted development support was used for the following tasks:
+
+- Inspecting the React/Vite frontend and Express/Mongoose backend structure.
+- Reviewing API endpoints against the route and controller implementation.
+- Checking MongoDB connection configuration and environment examples.
+- Reviewing Git hygiene, including ignored environment files and dependency folders.
+- Diagnosing local port conflicts and aligning `PORT`, `CORS_ORIGIN`, and `VITE_API_URL`.
+
+AI assistance was used as a development aid; application behavior and command results should be verified against the actual project.
+
+## Possible future improvements
+
+- Add JWT authentication and user-scoped tasks.
+- Implement a persistent activity feed API.
+- Add workspace-scoped tasks using a `workspaceId`.
+- Deploy the API and configure the production frontend API URL.
